@@ -1,14 +1,37 @@
 #ifndef FILEIO_H
 #define FILEIO_H
 
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include<vector>
+
 typedef struct _points {
+
     float x, y, z;
+
 } points;
 
 typedef struct _cells {
-    int n[16] = {-1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+
+    int n[4] = {-1, -1, -1, -1};
+
 } cells;
 
-int readBlock(std::string fileName, std::string line1, std::string line2, std::vector<points> &fooP, std::vector<cells> &fooC);
+// https://codereview.stackexchange.com/questions/38879/parsing-text-file-in-c
+class Vtk {
+
+public:
+    std::string s;
+    float x[3];
+    int c[4];
+
+    Vtk() {}
+    ~Vtk() {}
+    friend std::istream& operator>>(std::istream &, Vtk &);
+
+};
+
+void readData(std::vector<points> &p, std::vector<cells> &c, std::string fileName);
 
 #endif // FILEIO_H

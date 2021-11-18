@@ -1,58 +1,51 @@
-#include <fstream>
-#include <sstream>
-#include <vector>
 #include "fileio.h"
 
-int readBlock(std::string fileName, std::string magicWord1, std::string magicWord2, std::vector<points> &fooP, std::vector<cells> &fooC) {
+std::istream& operator>>(std::istream &str, Vtk &data) {
 
-    std::ifstream fileToRead(fileName, std::ifstream::in);
-    if ((fileToRead.rdstate() & std::ifstream::failbit) != 0) return -1;
+    std::string line;
+    Vtk tmp;
+    if (std::getline(str, line)) {
+        std::stringstream iss(line);
+        if (std::getline(iss, tmp.s, '\n')) swap(data.s, tmp.s);
+        else str.setstate(std::ios::failbit);
+    } // if
 
-    std::string lineToRead;
+    return str;
+} // operator >>
 
-    bool goRead = false;
-    while (getline(fileToRead, lineToRead)) {
+void readData(std::vector<points> &p, std::vector<cells> &c, std::string fileName) {
 
-        if (goRead == true) {
-            if (lineToRead.compare("") == 0) { goRead = false; continue; }
-            std::stringstream lineStream(lineToRead);
-            points p;
-            lineStream >> p.x >> p.y >> p.z;
-            fooP.push_back(p);
-        } // if
+    Vtk data;
 
-        std::stringstream ss(lineToRead);
-        std::string s0;//, s1, s2;
-//        ss >> s0 >> s1 >> s2;
-        ss >> s0;
-        if (s0.compare(magicWord1) == 0) goRead = true;
+    std::ifstream readFile(fileName, std::ifstream::in);
 
-    }//while
+    std::string line_avoid;
+    for (int i = 0; i < 6; i++) std::getline(readFile, line_avoid);
 
-    fileToRead.clear();
-    fileToRead.seekg(0, std::ios::beg);
+    while (readFile >> data) {
+        std::stringstream ss(data.s);
+        ss >> data.x[0] >> data.x[1] >> data.x[2];
+        p.push_back({data.x[0], data.x[1], data.x[2]});
+    } // while
 
-    goRead = false;
-    while (getline(fileToRead, lineToRead)) {
+    readFile.clear(); // readFile.setstate(std::ios::clear);
+    std::getline(readFile, line_avoid);
 
-        if (goRead == true) {
-            if (lineToRead.compare("") == 0) { goRead = false; continue; }
-            std::stringstream lineStream(lineToRead);
-            cells c; int n; // dummy
-//            lineStream >> n >> c.n[0] >> c.n[1] >> c.n[2] >> c.n[3];
-            lineStream >> n;
-            for (int i = 0; i < n; i++) lineStream >> c.n[i];
-            fooC.push_back(c);
-        } // if
+    while (readFile >> data) {
+        std::stringstream ss(data.s);
+        int dummy;
+//        ss >> dummy >> data.c[0] >> data.c[1] >> data.c[2] >> data.c[3];
 
-        std::stringstream ss(lineToRead);
-        std::string s0;//, s1, s2;
-        ss >> s0;// >> s1 >> s2;
-        if (s0.compare(magicWord2) == 0) goRead = true;
+        ss >> dummy >> data.c[0] >> data.c[1] >> data.c[2];
+        if (dummy == 4) ss >> data.c[3];
+        else if (dummy == 3) data.c[3] = -1;
+        else {}
 
-    }//while
+        c.push_back({data.c[0], data.c[1], data.c[2], data.c[3]});
+    } // while
 
-    fileToRead.close();
+    readFile.close();
+    data.~Vtk();
 
-    return 0;
-}//readBlock
+    return;
+} // readData
